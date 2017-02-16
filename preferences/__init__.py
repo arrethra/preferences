@@ -8,7 +8,7 @@ Author: Arrethra ( https://github.com/arrethra )
 Under MIT license
 """
 
-
+# TODO: write methods get and set (rename) to be in line with expectations/traditions
 
 from copy import copy
 import json
@@ -72,9 +72,9 @@ class Preferences():
                        **keyword_defaults
                  ):
         # TODO: check if filename is really a string (or can a path have diferent instances??)
-        # todo: check if defaults is really an instance of dict
         if not os.path.isabs(filename): #it's not an absolute path, which makes it a relative path
-            import inspect  
+            import inspect
+            # TODO: check if path is a valid relative path ??? 
             originating_folder = os.path.split( inspect.stack()[1][1] )[0]
             self._filename_to_store_the_preferences = os.path.join(originating_folder , filename) # get path of place from where this function is called, and join it with the new filename/relative path
         else:
@@ -191,6 +191,7 @@ class Preferences():
             text_file = open(self._filename_to_store_the_preferences, "w")
             text_file.write("%s" % Z) # TODO: right now I rewrite the entire file everytime, but this is time-consuming: I should only overwrite the lines that need overwriting....
             text_file.close()
+        return self
             
 
     def set_default_values(self, *dicts_with_default_values, **kwargs):
@@ -384,6 +385,7 @@ class Preferences():
                 setattr(self,attribute,master_dict[attribute])
             except:
                 raise
+        return self
             
     def delete_preferences_file(self):
         """
