@@ -8,7 +8,6 @@ Author: Arrethra ( https://github.com/arrethra )
 Under MIT license
 """
 
-# TODO: write methods get and set (rename) to be in line with expectations/traditions
 
 from copy import copy
 import json
@@ -191,8 +190,8 @@ class Preferences():
                     del attributes[x] # if this gets into the file, the attribute "_initialization_complete_of_this_class" could be initialized before it is supposed to. This could bring havoc upon method __init__
                 except:
                     pass
-
             attributes = OrderedDict(sorted(attributes.items(), key = lambda x: x[0] if x[0] != "_defaults_of_this_class" else 40*"z"))
+
             Z = json.dumps(attributes)
             Z = Z[0:Z.index("_defaults_of_this_class")].replace(",",",\n") + Z[Z.index("_defaults_of_this_class"):].replace(",",",\n"+28*" ") # remark: I am pretty-typing json myself, but json self also has this capability. erghh, too late for that
 
@@ -242,8 +241,16 @@ class Preferences():
                 
         return self # enables chaining
 
-                
-    def reset_to_default(self,*attr_names,exclude = None):
+    def _valid_attributes(self,order = False):
+        """
+        Returns current valid attributes as strings, in a list.
+        (i.e. excluding the private attributes of this class).
+        """
+        current_attributes = self.__dict__.keys()
+        VALID_ATTRIBUTES = [a for a in current_attributes if not a in self.ATTRIBUTES_TO_IGNORE +["_defaults_of_this_class"] ]
+        return VALID_ATTRIBUTES
+
+    def reset_to_default(self,*attr_names, exclude = None):
         """
         Resets attributes to default value. If attributes are entered
         (their string-equivalent), those attributes will be resetted.        
@@ -257,8 +264,7 @@ class Preferences():
         """
         
         names = []
-        current_attributes = self.__dict__.keys()
-        VALID_ATTRIBUTES = [a for a in current_attributes if not a in self.ATTRIBUTES_TO_IGNORE +["_defaults_of_this_class"] ]
+        VALID_ATTRIBUTES = self._valid_attributes()
         if len(attr_names) != 0:
             for attr_name in attr_names:
                 if not isinstance(attr_name,list):
@@ -359,16 +365,22 @@ class Preferences():
         return True
 
 
+    def set(self, name, value):
+        """
+        Method to set attribute. Argument 'name' must be
+        string-equivalent of attribute.
+
+        For more variable input, or setting multiple attributes, see
+        method set_value.
+        """
+        setattr(self,name,value)
+        return self
+
 
     def set_value(self,*dicts_with_values,**keyword_attributes):
         """
-        Method to set attributes. Very similar to function
-        setattr, although this method offers more variable input.
-
-        This method comes in handy when when the need arises for a
-        function to be able to set a value. (i.e. if the value cannot be
-        set directly by a single statement, such as when working with
-        tkinter or similar.)
+        Method to set multiple attributes at once. Similar to method set
+        or function setattr.
 
         Input can be realized by two means:
         - a dictionary, in which the keys are the string-equivalents
@@ -397,7 +409,24 @@ class Preferences():
             except:
                 raise
         return self
-            
+
+
+    def get(self,name):
+        """
+        Gets value of attribute. Method is same as obtaining value of
+        attribute directly, or using getattr.
+        """
+        if not isinstance(name,str):
+            error_message = "Input must be string with string-equivalent of Attribute."
+            raise TypeError(error_message)
+        VALID_ATTRIBUTES = self._valid_attributes()
+        if not name in VALID_ATTRIBUTES:
+            error_message = "Input '%s' must be valid AttributeName. Valid names would be '%s'."%(name,"', '".join(sorted(VALID_ATTRIBUTES)))
+            raise AttributeError (error_message)
+        return getattr(self,name)
+
+
+
     def delete_preferences_file(self):
         """
         Removes the file stored on the computer.
@@ -466,11 +495,18 @@ if __name__ == "__main__":
     b = Preferences(filename = filename, header = "test phase, changed header", x=10)
     b.reset_to_default("x")     
     assert b.x == 10
-    b.set_value(x=1)    
+
+    b.set_value(x = 11)
+    assert b.x == 11
+    b.set_value({"x":12})
+    assert b.x == 12
+    b.set("x",1)
     assert b.x==1
-    b.set_value({"x":2})
+
+    b.set("x",2)
     assert b.x==2
     b.set_default_values(x=-1)
     assert b.x != -1
+    assert b.x == b.get("x")
     
     
