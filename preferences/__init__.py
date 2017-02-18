@@ -83,8 +83,8 @@ class Preferences():
             path = os.path.abspath(path) # in case input was not formatted correctly
             path_to_filename = os.path.split(path)[0]
             if not os.path.isabs(path_to_filename):
-                error_message = "Entered filename '%s' does not lead to exisiting directory."%filename
-                raise OSError(error_message) # Is this the correct version of error to be raised?
+                error_message = "No such directory: %s."%filename
+                raise FileNotFoundError(error_message) # Is this the correct version of error to be raised?
             else:
                 self._filename_to_store_the_preferences = path
         else:
@@ -241,7 +241,7 @@ class Preferences():
                 
         return self # enables chaining
 
-    def _valid_attributes(self,order = False):
+    def _valid_attributes(self):
         """
         Returns current valid attributes as strings, in a list.
         (i.e. excluding the private attributes of this class).
