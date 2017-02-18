@@ -71,15 +71,26 @@ class Preferences():
                        header   = "",
                        **keyword_defaults
                  ):
-        # TODO: check if filename is really a string (or can a path have diferent instances??)
-        if not os.path.isabs(filename): #it's not an absolute path, which makes it a relative path
+
+        # processing filename
+        if not isinstance(filename,(str,bytes)):
+            error_message = "Argument 'filename' needs to be a path (either string or bytes) but found type %s."%filename
+            raise TypeError(error_message)
+        path_to_filename = os.path.split(filename)[0]
+        if not os.path.isabs(path_to_filename): #it's not an absolute path, which makes it a relative path
             import inspect
-            # TODO: check if path is a valid relative path ??? 
             originating_folder = os.path.split( inspect.stack()[1][1] )[0]
-            self._filename_to_store_the_preferences = os.path.join(originating_folder , filename) # get path of place from where this function is called, and join it with the new filename/relative path
+            path = os.path.join(originating_folder , filename) # gets path of place from where this function is called, and join it with the new filename/relative path
+            path = os.path.abspath(path) # in case input was not formatted correctly
+            path_to_filename = os.path.split(path)[0]
+            if not os.path.isabs(path_to_filename):
+                error_message = "Entered filename '%s' does not lead to exisiting directory."%filename
+                raise OSError(error_message) # Is this the correct version of error to be raised?
+            else:
+                self._filename_to_store_the_preferences = path
         else:
             self._filename_to_store_the_preferences = filename
-            
+
         self._header_of_this_class = header
 
         
