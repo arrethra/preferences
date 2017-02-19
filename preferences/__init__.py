@@ -83,8 +83,8 @@ class Preferences():
             path = os.path.abspath(path) # in case input was not formatted correctly
             path_to_filename = os.path.split(path)[0]
             if not os.path.isabs(path_to_filename):
-                error_message = "Entered filename '%s' does not lead to exisiting directory."%filename
-                raise OSError(error_message) # Is this the correct version of error to be raised?
+                error_message = "No such directory: %s."%filename
+                raise FileNotFoundError(error_message)
             else:
                 self._filename_to_store_the_preferences = path
         else:
@@ -429,10 +429,8 @@ class Preferences():
 
     def delete_preferences_file(self):
         """
-        Removes the file stored on the computer.
-
-        TODO: Not fully tested if this class works afterwards as well,
-              Though I expect the class to still work.
+        Removes the stored file. This method does not destroy this
+        class, nor affects any attributes.
         """
         os.remove(self._filename_to_store_the_preferences)
         return self # enables chaining
