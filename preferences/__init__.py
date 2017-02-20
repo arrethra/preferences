@@ -9,6 +9,7 @@ Under MIT license
 """
 
 
+
 from copy import copy
 import json
 import os.path
@@ -193,7 +194,7 @@ class Preferences():
             attributes = OrderedDict(sorted(attributes.items(), key = lambda x: x[0] if x[0] != "_defaults_of_this_class" else 40*"z"))
 
             Z = json.dumps(attributes)
-            Z = Z[0:Z.index("_defaults_of_this_class")].replace(",",",\n") + Z[Z.index("_defaults_of_this_class"):].replace(",",",\n"+28*" ") # remark: I am pretty-typing json myself, but json self also has this capability. erghh, too late for that
+            Z = Z[0:Z.index("_defaults_of_this_class")-1].replace(",",",\n") +"\n "+ Z[Z.index("_defaults_of_this_class")-1:].replace(",",",\n"+28*" ") # remark: I am pretty-typing json myself, but json self also has this capability. erghh, too late for that
 
             if self._header_of_this_class:
                 Z = self._header_of_this_class + "\n\n"+self.HEADER_SPLITTER+"\n\n" + Z
@@ -280,8 +281,9 @@ class Preferences():
 
         # handles keyword 'exclude', and filters it/them into correct format
         if not isinstance(exclude,(list,tuple,str,type(None))):
-            error_message = "For method 'reset_to_default', the keyword 'exclude' got unexpected input of type %s. Input should be string (of attribute), possibly collected in tuple or list."\
-                            %(type(exclude))
+            error_message = "For method 'reset_to_default', the keyword 'exclude' got unexpected "+\
+                            "input of type %s. Input should be string (of attribute), possibly "+\
+                            "collected in tuple or list."%(type(exclude))
             raise TypeError(error_message)
         if isinstance(exclude,str):
             exclude = [exclude]
@@ -365,6 +367,22 @@ class Preferences():
         return True
 
 
+    def _test_if_valid_attribute(self,name): # TODO: expand functionality to other functions, so code is cleaned up there??
+        """
+        Tests if name is valid attribute of this class.
+        If it fails, this method returns an error. (otherwise None)
+        You still need to raise error this yourself!
+        """
+        if not isinstance(name,str):
+            error_message = "Input must be string-equivalent to an attribute, but found type %s."\
+                            %type(name)
+            return TypeError(error_message)
+        if not name in self._valid_attributes():
+            error_message = "'%s' is not a valid attribute; valid attributes are '%s'"\
+                            %(name,"', '".join(sorted(self._valid_attributes())))
+            return AttributeError(error_message)
+
+
     def set(self, name, value):
         """
         Method to set attribute. Argument 'name' must be
@@ -373,6 +391,8 @@ class Preferences():
         For more variable input, or setting multiple attributes, see
         method set_value.
         """
+        if self._test_if_valid_attribute(name): # Error_handling
+            raise self._test_if_valid_attribute(name)
         setattr(self,name,value)
         return self
 
@@ -416,20 +436,31 @@ class Preferences():
         Gets value of attribute. Method is same as obtaining value of
         attribute directly, or using getattr.
         """
-        if not isinstance(name,str):
-            error_message = "Input must be string with string-equivalent of Attribute."
-            raise TypeError(error_message)
-        VALID_ATTRIBUTES = self._valid_attributes()
-        if not name in VALID_ATTRIBUTES:
-            error_message = "Input '%s' must be valid AttributeName. Valid names would be '%s'."%(name,"', '".join(sorted(VALID_ATTRIBUTES)))
-            raise AttributeError (error_message)
-        return getattr(self,name)
+        
+        if self._test_if_valid_attribute(name): # Error_handling
+            raise self._test_if_valid_attribute(name)
 
+        return getattr(self,name)
+    
+
+    def delete_attribute(self,name):
+        """        
+        Deletes attribute from both class and stored file.
+        Also removes any default value of that attribute.
+        """ # TODO: should this "override" the __delattr__ ?
+
+        if self._test_if_valid_attribute(name): # Error_handling
+            raise self._test_if_valid_attribute(name)
+        
+        if name in self._defaults_of_this_class.keys():
+            del self._defaults_of_this_class[name]
+        super().__delattr__(name)
+        self.write_to_file()
 
 
     def delete_preferences_file(self):
         """
-        Removes the stored file. This method does not destroy this
+        Deletes the stored file. This method does not destroy this
         class, nor affects any attributes.
         """
         os.remove(self._filename_to_store_the_preferences)
@@ -466,9 +497,13 @@ if __name__ == "__main__":
         a.ExampleInteger = "str" # test if this raises a TypeError (like it should). If so, it is ignored in this example 
     except TypeError: pass
     else: raise Exception
-    os.remove(filename_ex2)
-    
+    a.delete_preferences_file()
 
+
+
+
+
+    
     # testing main functionality
     filename = "preferences__Ignore_me_Im_just_part_of_a_test.txt"
     try: #begin with clean sheet
@@ -507,4 +542,22 @@ if __name__ == "__main__":
     assert b.x != -1
     assert b.x == b.get("x")
     
+    
+    # testing delete_attribute
+    b.set_default_values(g=5)
+    b.delete_attribute("g")
+    try:
+        b.g
+        raise Exception("shouldn't still have an attribute 'g'")
+    except AttributeError:
+        pass
+
+    del b
+    b = Preferences(filename = filename, header = "test phase, changed header", x=10)
+    try:
+        b.g
+        raise Exception("shouldn't still have an attribute 'g'")
+    except AttributeError:
+        pass
+    b.delete_preferences_file()
     
