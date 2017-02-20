@@ -30,10 +30,11 @@ prefs = Preferences(defaults = prefs_defaults,
                     filename = "preferences_test.txt")
 
 # At first use, attributes are initialized to default
-# If previous uses set them at different values, 
+# If previous uses set them at different values, the default value will 
+# not override the 'old value'.
 assert prefs.X == 1 and prefs.Y == 2                        # True
 
-# by setting the following attributes, their new values are
+# By setting the following attributes, their new values are
 # automatically stored into the file
 prefs.X = 3
 prefs.Y = 4
@@ -49,7 +50,7 @@ prefs.Z = 5
 prefs = Preferences(defaults = prefs_defaults,
                     filename = "preferences_test.txt")
 
-# old values have been remembered
+# Old values have been remembered
 assert prefs.X == 3 and prefs.Y == 4 and prefs.Z == 5        # True
 
 # Following method resets ALL values (if no arguments are given),

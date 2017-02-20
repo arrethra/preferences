@@ -429,10 +429,8 @@ class Preferences():
 
     def delete_preferences_file(self):
         """
-        Removes the file stored on the computer.
-
-        TODO: Not fully tested if this class works afterwards as well,
-              Though I expect the class to still work.
+        Removes the stored file. This method does not destroy this
+        class, nor affects any attributes.
         """
         os.remove(self._filename_to_store_the_preferences)
         return self # enables chaining
