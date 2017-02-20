@@ -84,7 +84,7 @@ class Preferences():
             path_to_filename = os.path.split(path)[0]
             if not os.path.isabs(path_to_filename):
                 error_message = "No such directory: %s."%filename
-                raise FileNotFoundError(error_message) # Is this the correct version of error to be raised?
+                raise FileNotFoundError(error_message)
             else:
                 self._filename_to_store_the_preferences = path
         else:
