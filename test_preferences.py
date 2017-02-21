@@ -36,7 +36,33 @@ def set_to_different_values(self,list_with_values = (4,5,6)):
     self.P.x1 = list_with_values[0]
     self.P.x2 = list_with_values[1]
     self.P.x3 = list_with_values[2]
-    
+
+
+class MyTestPrefs(Preferences):
+    def check_before_setting_attribute(self, name, value):
+        # checks if x1 is integer; otherwise raise TypeError
+        if   name == "x1":
+            return isinstance(value,int)
+        # check if possible to convert value into integer, otherwise raise TypeError
+        elif name == "x2":
+            if not isinstance(value,int):
+                try:
+                    value_2 = int(value)
+                except:
+                    return False
+                else:
+                    setattr(self,name,value_2)
+                    return "pass"
+        elif name == "x3":
+            raise ValueError
+        elif name == "x4":
+            return True
+        else:
+            if not name.startswith("_"):
+                error_message = "Apart from x1,x2,x3,x4, no other attributes can be set (but you tried to set '%s'."%name
+                raise AttributeError(error_message)
+        return True
+
 
 
 
@@ -45,7 +71,7 @@ def set_to_different_values(self,list_with_values = (4,5,6)):
 
 class TestPreferences(unittest.TestCase):
     def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)        
+        super().__init__(*args,**kwargs)
         # (tries to) makes sure that there is no preference file initiated before starting this test
         self.tearDown()
 
@@ -136,14 +162,24 @@ class TestPreferences(unittest.TestCase):
         assert_class_works_correctly(self, self.initialize_with_relative_path)     
         
     def test_initialize_with_header(self):
-        self.P = self.initialize_with_header()
+        random_text = "sdasdfasdfasdfasdiufsd bkcseigr r iuhsad  rf asdfklgh  rufh as as jgha a as jh aas as f khs s askh as  ak hh   kha a  a kha   a kasfsfsdfasdfk hadf \n"+\
+                      "aslhjfasd   sdfghbass d asrgasefkjjsd  ;ohh safljh i  ousadf  ;jjhdf lasdf ijhsadf l iadhf oasdf h"
+        self.P = self.initialize_with_header(random_text)
         assert_default_values(self)
         assert_class_works_correctly(self)
         
         self.P.reset_to_default()        
-        assert_class_works_correctly(self,self.initialize_with_header)
-        # TODO: don't have a simple way to test the header itself
-        
+        assert_class_works_correctly(self,lambda:self.initialize_with_header(random_text))
+        file_name_ = self.P._filename_to_store_the_preferences
+        file_string = ""
+        with open(file_name_) as inputfile:
+            for line in inputfile:
+                file_string += line
+        self.assertTrue(file_string.startswith(random_text))
+
+
+
+
 
   
         
@@ -229,7 +265,6 @@ class TestPreferences(unittest.TestCase):
         assert_values(self,[4,2,3])
         
 
-    # TODO: test set_default_values
 
 
     def test_delete_attribute(self):
@@ -258,7 +293,7 @@ class TestPreferences(unittest.TestCase):
                 del self.P
                 i+=1
 
-    # todo: test check_value_before_setting.....
+
     # todo: for most functions, check error_handling... ?
                 
     def test_set_value_with_dict(self):
@@ -291,22 +326,43 @@ class TestPreferences(unittest.TestCase):
         self.P.set_default_values({"x1":"da"},{"x3":0},x2=0).reset_to_default()
         assert_values(self,["da",0,0])
 
-    
-        
-    
-        
-        
-    
-        
+        set_to_different_values
+        del self.P
+        self.P = self.initialize_without_defaults()
+        self.P.reset_to_default()
+        assert_values(self,["da",0,0])
+
+
+    def test_check_before_setting_attribute(self):
+        self.P = MyTestPrefs(filename = self.filename)
+        with self.assertRaises(TypeError):
+            self.P.set("x1","bla")
+        self.P.x1 = 5
+        self.P.x2 = "3"
+        self.assertTrue(isinstance(self.P.x2,int))
+        self.P.x2 = 6
+        self.assertTrue(self.P.x2 == 6)
+        with self.assertRaises(TypeError):
+            self.P.x2 = ["h"]
+        with self.assertRaises(ValueError):
+            self.P.x3 = 5
+        self.P.x4= 5
+        self.P.x4 = "h"
+        self.P.x4 = []  # can be anything
+        with self.assertRaises(AttributeError):
+            self.P.stupid_attribute = ["h"]
+
+        # also works when setting through set
+        with self.assertRaises(TypeError):
+            self.P.set(x2 = ["h"])
+
         
 
-    
         
         
         
 
     def tearDown(self):
-        
         try:
             self.P.delete_preferences_file()
         except: pass
@@ -314,5 +370,8 @@ class TestPreferences(unittest.TestCase):
             del self.P
         except: pass
 
+
+def run_test_preferences():
+        unittest.main()
 if __name__ == '__main__':
-    unittest.main()
+    run_test_preferences()

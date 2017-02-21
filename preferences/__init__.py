@@ -174,9 +174,10 @@ class Preferences():
             else:
                 self.write_to_file()
         else:
-            error_message = "The change of the attribute '%s' failed the method 'check_before_setting_attribute' in this class; \
-                            the value was of type '%s' and of value '%s'."\
-                            %(name,type(value),value)
+            error_message = "The change of the attribute '"+name+"' failed the method "+\
+                            "'check_before_setting_attribute' in this class; "+\
+                            "the value was of type '%s' and of value '%s'."\
+                            %(type(value),value)
             raise TypeError(error_message)
         
 
