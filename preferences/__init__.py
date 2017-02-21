@@ -61,7 +61,7 @@ class Preferences():
     
     ATTRIBUTES_TO_IGNORE = ["_initialization_complete_of_this_class",
                             "_filename_to_store_the_preferences",
-                            "_header_of_this_class"]
+                            "_header_of_this_class"] # TODO: make control-attribute that checks if file exists? So you won't get an error if delete_preferences_file is called_upon twice ??
     
     HEADER_SPLITTER = 40*"#"
 
@@ -83,8 +83,8 @@ class Preferences():
             path = os.path.join(originating_folder , filename) # gets path of place from where this function is called, and join it with the new filename/relative path
             path = os.path.abspath(path) # in case input was not formatted correctly
             path_to_filename = os.path.split(path)[0]
-            if not os.path.isabs(path_to_filename):
-                error_message = "No such directory: %s."%filename
+            if not os.path.exists(path_to_filename): # TODO: use os.path.exists()  ??
+                error_message = "No such directory: %s."%path_to_filename
                 raise FileNotFoundError(error_message)
             else:
                 self._filename_to_store_the_preferences = path
@@ -391,7 +391,7 @@ class Preferences():
         For more variable input, or setting multiple attributes, see
         method set_value.
         """
-        if self._test_if_valid_attribute(name): # Error_handling
+        if isinstance(self._test_if_valid_attribute(name),TypeError): # Error_handling
             raise self._test_if_valid_attribute(name)
         setattr(self,name,value)
         return self
