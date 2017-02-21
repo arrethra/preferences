@@ -59,11 +59,12 @@ class Preferences():
     Example2 = Preferences(x=2, y=2)
     """
     
-    ATTRIBUTES_TO_IGNORE = ["_initialization_complete_of_this_class",
-                            "_filename_to_store_the_preferences",
-                            "_header_of_this_class"] # TODO: make control-attribute that checks if file exists? So you won't get an error if delete_preferences_file is called_upon twice ??
+    _ATTRIBUTES_TO_IGNORE = ("_initialization_complete_of_this_class",
+                             "_filename_to_store_the_preferences",
+                             "_header_of_this_class",
+                             "_ATTRIBUTES_TO_IGNORE") # TODO: make control-attribute that checks if file exists? So you won't get an error if delete_preferences_file is called_upon twice ??
     
-    HEADER_SPLITTER = 40*"#"
+    _HEADER_SPLITTER = 40*"#"
 
     
     def __init__(self, defaults = "dict",
@@ -79,6 +80,7 @@ class Preferences():
         path_to_filename = os.path.split(filename)[0]
         if not os.path.isabs(path_to_filename): #it's not an absolute path, which makes it a relative path
             import inspect
+
             originating_folder = os.path.split( inspect.stack()[1][1] )[0]
             path = os.path.join(originating_folder , filename) # gets path of place from where this function is called, and join it with the new filename/relative path
             path = os.path.abspath(path) # in case input was not formatted correctly
@@ -90,6 +92,8 @@ class Preferences():
                 self._filename_to_store_the_preferences = path
         else:
             self._filename_to_store_the_preferences = filename
+
+
 
         self._header_of_this_class = header
 
@@ -104,11 +108,11 @@ class Preferences():
              text_file.close()             
         else:
             saved_values = "".join(saved_values)
-            if self.HEADER_SPLITTER in saved_values:
-                header_from_file = saved_values.split(self.HEADER_SPLITTER)[0][:-2]
+            if self._HEADER_SPLITTER in saved_values:
+                header_from_file = saved_values.split(self._HEADER_SPLITTER)[0][:-2]
                 if not self._header_of_this_class:
                     self._header_of_this_class = header_from_file
-                saved_values = saved_values.split(self.HEADER_SPLITTER)[-1]
+                saved_values = saved_values.split(self._HEADER_SPLITTER)[-1]
             saved_values = saved_values.replace("\n","")
             try:
                 saved_values = json.loads(saved_values)
@@ -153,7 +157,6 @@ class Preferences():
         if result_of_check == "pass":
             pass
         elif result_of_check:
-            
             if callable(value):
                 error_message = "You cannot assign functions to attributes of this class, but still you tried to allocate a function to attribute '%s'."\
                                 %(type(value),name) #json won't accept functions and such, only predefined numbers and things
@@ -186,7 +189,7 @@ class Preferences():
         if self._initialization_complete_of_this_class:
             
             attributes = copy(self.__dict__)
-            for x in self.ATTRIBUTES_TO_IGNORE:
+            for x in self._ATTRIBUTES_TO_IGNORE:
                 try:
                     del attributes[x] # if this gets into the file, the attribute "_initialization_complete_of_this_class" could be initialized before it is supposed to. This could bring havoc upon method __init__
                 except:
@@ -197,7 +200,7 @@ class Preferences():
             Z = Z[0:Z.index("_defaults_of_this_class")-1].replace(",",",\n") +"\n "+ Z[Z.index("_defaults_of_this_class")-1:].replace(",",",\n"+28*" ") # remark: I am pretty-typing json myself, but json self also has this capability. erghh, too late for that
 
             if self._header_of_this_class:
-                Z = self._header_of_this_class + "\n\n"+self.HEADER_SPLITTER+"\n\n" + Z
+                Z = self._header_of_this_class + "\n\n"+self._HEADER_SPLITTER+"\n\n" + Z
 
             text_file = open(self._filename_to_store_the_preferences, "w")
             text_file.write("%s" % Z) # TODO: right now I rewrite the entire file everytime, but this is time-consuming: I should only overwrite the lines that need overwriting....
@@ -224,7 +227,9 @@ class Preferences():
         """
         master_dict = {}
         for dict_with_default_values in dicts_with_default_values:
-            assert isinstance(dict_with_default_values, dict)
+            if not isinstance(dict_with_default_values, dict):
+                error_message = "TODO" # TODO
+                raise TypeError(error_message)
             master_dict.update(dict_with_default_values)
 
         master_dict.update(kwargs)
@@ -234,7 +239,9 @@ class Preferences():
         self._defaults_of_this_class = OrderedDict(sorted(dict_copy.items(),key = lambda x:x[0]))
         
         for x in master_dict:
-            assert isinstance(x,str), "Attribute name must be initialized as a string, but found type %s."%type(x)
+            if not isinstance(x,str):
+                error_message = "Attribute name must be initialized as a string, but found type %s."%type(x)
+                raise TypeError(error_message)
             try:
                 getattr(self,x)
             except AttributeError:
@@ -248,7 +255,7 @@ class Preferences():
         (i.e. excluding the private attributes of this class).
         """
         current_attributes = self.__dict__.keys()
-        VALID_ATTRIBUTES = [a for a in current_attributes if not a in self.ATTRIBUTES_TO_IGNORE +["_defaults_of_this_class"] ]
+        VALID_ATTRIBUTES = [a for a in current_attributes if not a in self._ATTRIBUTES_TO_IGNORE + ("_defaults_of_this_class",) ]
         return VALID_ATTRIBUTES
 
     def reset_to_default(self,*attr_names, exclude = None):
@@ -293,7 +300,7 @@ class Preferences():
 
         # exempts the excluded attributes from being reset.
         for exc in exclude:
-            assert isinstance(exc,str), exc
+            assert isinstance(exc,str), exc # TODO  (TODO: check other assert as well, with ctrl-F)
             if not exc in VALID_ATTRIBUTES:
                 excluded_names += [exc]
             elif exc in names:
@@ -310,7 +317,7 @@ class Preferences():
         # collects any attributes that did not have a default value   
         name_error = []        
         for name in names:
-            assert isinstance(name,str), "The attributes should be the string-equivalents, but found type %s"%type(name)
+            assert isinstance(name,str), "The attributes should be the string-equivalents, but found type %s"%type(name)  # TODO
             try:                
                 setattr(self, name, self._defaults_of_this_class[name])                
             except:                
@@ -416,7 +423,7 @@ class Preferences():
         master_dict = {}
         if dicts_with_values:
             for dict_with_values in dicts_with_values:
-                assert isinstance(dict_with_values, dict)
+                assert isinstance(dict_with_values, dict) # TODO
                 master_dict.update(dict_with_values)
         if keyword_attributes:
             master_dict.update(keyword_attributes)

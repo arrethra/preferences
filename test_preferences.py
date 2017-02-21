@@ -18,22 +18,34 @@ def assert_different_values(self):
     self.assertTrue(self.P.x1 == 4)
     self.assertTrue(self.P.x2 == 5)
     self.assertTrue(self.P.x3 == 6)
+
+
+def assert_class_works_correctly(self, function = "self.initialize_with_dict"):
+    assert_default_values(self)
+    
+    self.P.x1 = 2
+    del self.P
+    if function == "self.initialize_with_dict":
+        self.P = self.initialize_with_dict()
+    else:
+        self.P = function()
+    self.assertTrue(self.P.x1 == 2)
     
 
 def set_to_different_values(self,list_with_values = (4,5,6)):
     self.P.x1 = list_with_values[0]
     self.P.x2 = list_with_values[1]
     self.P.x3 = list_with_values[2]
+    
 
 
 
-# TODO: test Header
+
 
 
 class TestPreferences(unittest.TestCase):
     def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
-        
+        super().__init__(*args,**kwargs)        
         # (tries to) makes sure that there is no preference file initiated before starting this test
         self.tearDown()
 
@@ -48,7 +60,7 @@ class TestPreferences(unittest.TestCase):
     def setUp(self):
         
         with self.assertRaises(AttributeError):
-            self.P # makes sure that we do not start with a preference_file already initialized
+            self.P # makes sure that we do not start with this class already initialized
     
     
     def initialize_with_dict(self):
@@ -88,41 +100,59 @@ class TestPreferences(unittest.TestCase):
 
     def initialize_without_defaults(self):
         P = Preferences(filename = self.filename)
-        return P    
-        
-        
-
-
+        return P
+    
+    def initialize_with_header(self,header_text = "some random text"):
+        P = Preferences(defaults = self.defaults_with_dict ,
+                        header = header_text,
+                        filename = self.filename)
+        return P
+    
 
     def test_initialize_with_keywords(self):
         self.P = self.initialize_with_keywords()
         assert_default_values(self)
+        assert_class_works_correctly(self)
 
     def test_initialize_with_dict(self):
         self.P = self.initialize_with_dict()
         assert_default_values(self)
+        assert_class_works_correctly(self)
         
     def test_initialize_mixed(self):
         self.P = self.initialize_mixed()
         assert_default_values(self)
+        assert_class_works_correctly(self)
 
     def test_initialize_with_absolute_path(self):
         self.P = self.initialize_with_absolute_path()
         assert_default_values(self)
+        assert_class_works_correctly(self,self.initialize_with_absolute_path)
 
     def test_initialize_with_relative_path(self):
-        self.P = self.initialize_with_relative_path()
+        
+        self.P = self.initialize_with_relative_path()       
         assert_default_values(self)
+        assert_class_works_correctly(self, self.initialize_with_relative_path)     
+        
+    def test_initialize_with_header(self):
+        self.P = self.initialize_with_header()
+        assert_default_values(self)
+        assert_class_works_correctly(self)
+        
+        self.P.reset_to_default()        
+        assert_class_works_correctly(self,self.initialize_with_header)
+        # TODO: don't have a simple way to test the header itself
+        
+
+  
         
         
 
     def test_remembrance(self):
         self.P = self.initialize_with_dict()
         assert_default_values(self)
-        self.P.x1 = 2
-        del self.P
-        self.P = self.initialize_with_dict()
-        self.assertTrue(self.P.x1 == 2)
+        assert_class_works_correctly(self)
 
     def test_delete_preferences_file(self):        
         self.P = self.initialize_with_dict()
@@ -259,7 +289,8 @@ class TestPreferences(unittest.TestCase):
         assert_values(self,[0,0,0])        
         
         self.P.set_default_values({"x1":"da"},{"x3":0},x2=0).reset_to_default()
-        assert_values(self,[0,0,0])
+        assert_values(self,["da",0,0])
+
     
         
     
@@ -275,6 +306,7 @@ class TestPreferences(unittest.TestCase):
         
 
     def tearDown(self):
+        
         try:
             self.P.delete_preferences_file()
         except: pass
