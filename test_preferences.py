@@ -1,7 +1,24 @@
 import unittest
 import os
+import inspect
+
+# This garbage just so to import 'preferences'
+import sys  # ADDED FOR THE ADJUSTED PATH-CHANGE (UPCOMING)
+current_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
+parent_folder = os.path.split(current_folder)[0]
+grandpa_folder = os.path.split(parent_folder)[0]
+if grandpa_folder not in sys.path:
+    sys.path.insert(0, grandpa_folder)
+del sys
+del current_folder, parent_folder, grandpa_folder
+
 
 from preferences import Preferences
+##import preferences
+
+CURRENT_PATH = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
+RELATIVE_FOLDER = "stupid_folder_for_testing_dfgd1236lth5viu"
+TARGET_FOLDER = os.path.join(CURRENT_PATH, RELATIVE_FOLDER)
 
 
 def assert_values(self,list_with_values):
@@ -84,10 +101,13 @@ class TestPreferences(unittest.TestCase):
                            "x3":6}
 
     def setUp(self):
-        
         with self.assertRaises(AttributeError):
             self.P # makes sure that we do not start with this class already initialized
-    
+
+    # creates a folder, for our relative path...
+    def setUpClass():
+        if not os.path.exists(TARGET_FOLDER):
+            os.makedirs(TARGET_FOLDER)
     
     def initialize_with_dict(self):
         self.defaults_with_dict =  {"x1":1,
@@ -109,15 +129,15 @@ class TestPreferences(unittest.TestCase):
         return P
 
     def initialize_with_absolute_path(self):
-        absolute_path = os.path.join(os.getcwd(),self.filename)
+        absolute_path = os.path.join(CURRENT_PATH,self.filename)
         P = Preferences(defaults = self.defaults_with_dict,
                                       filename = absolute_path)        
         return P
 
     def initialize_with_relative_path(self):
-        relative_folder = "preferences"
-        relative_path = os.path.join(relative_folder,self.filename)
-        absolute_path = os.path.join(os.getcwd(), relative_folder)
+
+        relative_path = os.path.join(RELATIVE_FOLDER, self.filename)
+        absolute_path = os.path.join(CURRENT_PATH, RELATIVE_FOLDER)
         self.assertTrue(os.path.exists(absolute_path)) # if this fails, that means that this test would fail anyway, because I haven't directed it to an existing folder
         
         P = Preferences(defaults = self.defaults_with_dict,
@@ -190,6 +210,7 @@ class TestPreferences(unittest.TestCase):
         assert_default_values(self)
         assert_class_works_correctly(self)
 
+
     def test_delete_preferences_file(self):        
         self.P = self.initialize_with_dict()
         set_to_different_values(self)
@@ -203,8 +224,6 @@ class TestPreferences(unittest.TestCase):
         
 
     def test_reset_to_default(self):
-
-        
         self.P = self.initialize_with_dict()
         set_to_different_values(self)
         self.P.reset_to_default()        
@@ -370,8 +389,16 @@ class TestPreferences(unittest.TestCase):
             del self.P
         except: pass
 
+    # a folder has been created for this class, time to delete that folder
+    def tearDownClass():
+        if os.path.exists(TARGET_FOLDER):
+            os.rmdir(TARGET_FOLDER)
+
+
+
 
 def run_test_preferences():
         unittest.main()
+
 if __name__ == '__main__':
     run_test_preferences()

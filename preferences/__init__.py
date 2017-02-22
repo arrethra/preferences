@@ -13,7 +13,7 @@ Under MIT license
 from copy import copy
 import json
 import os.path
-from collections import OrderedDict
+import collections as col
 
   
 class Preferences():
@@ -125,7 +125,7 @@ class Preferences():
                     setattr(self, attr_name, saved_values[attr_name])
                         
         try:
-            self._defaults_of_this_class = OrderedDict(sorted(self._defaults_of_this_class.items(),key = lambda x:x[0]))
+            self._defaults_of_this_class = col.OrderedDict(sorted(self._defaults_of_this_class.items(),key = lambda x:x[0]))
         except AttributeError:
             self._defaults_of_this_class = {}  #just initiating this attribute, the method set_default_values sets it
 
@@ -195,7 +195,7 @@ class Preferences():
                     del attributes[x] # if this gets into the file, the attribute "_initialization_complete_of_this_class" could be initialized before it is supposed to. This could bring havoc upon method __init__
                 except:
                     pass
-            attributes = OrderedDict(sorted(attributes.items(), key = lambda x: x[0] if x[0] != "_defaults_of_this_class" else 40*"z"))
+            attributes = col.OrderedDict(sorted(attributes.items(), key = lambda x: x[0] if x[0] != "_defaults_of_this_class" else 40*"z"))
 
             Z = json.dumps(attributes)
             Z = Z[0:Z.index("_defaults_of_this_class")-1].replace(",",",\n") +"\n "+ Z[Z.index("_defaults_of_this_class")-1:].replace(",",",\n"+28*" ") # remark: I am pretty-typing json myself, but json self also has this capability. erghh, too late for that
@@ -229,24 +229,33 @@ class Preferences():
         master_dict = {}
         for dict_with_default_values in dicts_with_default_values:
             if not isinstance(dict_with_default_values, dict):
-                error_message = "TODO" # TODO
+                error_message = "Expected dictionary (as non-keyword argument) but found type %s."%(dict_with_default_values)
                 raise TypeError(error_message)
             master_dict.update(dict_with_default_values)
 
         master_dict.update(kwargs)
 
+
+
+        error_collection = []
+        for x in master_dict.copy():
+            if not isinstance(x,str):
+                error_collection.append([x,master_dict[x]])
+                del master_dict[x]
+            else:
+                try:
+                    getattr(self,x)
+                except AttributeError:
+                    setattr(self,x,master_dict[x])
+
         dict_copy = self._defaults_of_this_class.copy()
         dict_copy.update( master_dict )
-        self._defaults_of_this_class = OrderedDict(sorted(dict_copy.items(),key = lambda x:x[0]))
-        
-        for x in master_dict:
-            if not isinstance(x,str):
-                error_message = "Attribute name must be initialized as a string, but found type %s."%type(x)
-                raise TypeError(error_message)
-            try:
-                getattr(self,x)
-            except AttributeError:
-                setattr(self,x,master_dict[x])
+        self._defaults_of_this_class = col.OrderedDict(sorted(dict_copy.items(),key = lambda x:x[0])) # TODO: do error_checking first, if all variables are correctly formatted and such.. ?
+
+        if error_collection:
+            error_message = "To set default for an attribute, the key in the dict must be of instance string, but found type(s) %s, (respectively) coupled to values %s."\
+          %( ", ".join(["%s"%(x[0]) for x in error_collection]), ", ".join(["%s"%(x[1]) for x in error_collection]) )
+            raise ValueError(error_message)
                 
         return self # enables chaining
 
@@ -475,8 +484,7 @@ class Preferences():
         return self # enables chaining
         
 
-               
-if __name__ == "__main__":    
+if __name__ == "__main__":
 
     # EXAMPLE 2: change value of input through method check_before_setting_attribute:
     class MyPrefs(Preferences):
@@ -505,67 +513,82 @@ if __name__ == "__main__":
         a.ExampleInteger = "str" # test if this raises a TypeError (like it should). If so, it is ignored in this example 
     except TypeError: pass
     else: raise Exception
+    a.set_default_values({"x":1})
     a.delete_preferences_file()
 
 
-
-
+    #### TEST #####   
+##    import sys, inspect
+##    current_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])) 
+##    parent_folder = os.path.split(current_folder)[0]
+##    if parent_folder not in sys.path:
+##        sys.path.insert(0, parent_folder)
+    from test.test_preferences import TestPreferences, run_test_preferences
+    
+    run_test_preferences()
+    
 
     
-    # testing main functionality
-    filename = "preferences__Ignore_me_Im_just_part_of_a_test.txt"
-    try: #begin with clean sheet
-        os.remove(filename)
-    except FileNotFoundError:
-        pass
-    a = Preferences(filename = filename )
-    a.x = 5
-    a.y = 6
-    del a # forgets the variable...
-    a = Preferences(filename = filename)
-    assert a.x == 5 # ...but the value has been remembered
-    assert a.reset_to_default(), a.reset_to_default() # No defaults have been set. Therefor the reset_to_default SHOULD return the variables it wasn't able to reset
-    assert not a.set_default_values({"x":1,"y":6}).reset_to_default()
+##
+##    ##### OBSOLETE TESTING ##########
+##    
+##    # testing main functionality
+##    filename = "preferences__Ignore_me_Im_just_part_of_a_test.txt"
+##    try: #begin with clean sheet
+##        os.remove(filename)
+##    except FileNotFoundError:
+##        pass
+##    a = Preferences(filename = filename )
+##    a.x = 5
+##    a.y = 6
+##    del a # forgets the variable...
+##    a = Preferences(filename = filename)
+##    assert a.x == 5 # ...but the value has been remembered
+##    assert a.reset_to_default(), a.reset_to_default() # No defaults have been set. Therefor the reset_to_default SHOULD return the variables it wasn't able to reset
+##    assert not a.set_default_values({"x":1,"y":6}).reset_to_default()
+##
+##    # tests header-option
+##    a = Preferences(filename = filename, header = "test phase")
+##    a.x = 5
+##    del a
+##    a = Preferences(filename = filename, header = "test phase, changed header")
+##
+##    b = Preferences(filename = filename, header = "test phase, changed header", x=10)
+##    b.reset_to_default("x")
+##    assert b.x == 10
+##
+##    b.set_value(x = 11)
+##    assert b.x == 11
+##    b.set_value({"x":12})
+##    assert b.x == 12
+##    b.set("x",1)
+##    assert b.x==1
+##
+##    b.set("x",2)
+##    assert b.x==2
+##    b.set_default_values(x=-1)
+##    assert b.x != -1
+##    assert b.x == b.get("x")
+##
+##
+##    # testing delete_attribute
+##    b.set_default_values(g=5)
+##    b.delete_attribute("g")
+##    try:
+##        b.g
+##        raise Exception("shouldn't still have an attribute 'g'")
+##    except AttributeError:
+##        pass
+##
+##    del b
+##    b = Preferences(filename = filename, header = "test phase, changed header", x=10)
+##    try:
+##        b.g
+##        raise Exception("shouldn't still have an attribute 'g'")
+##    except AttributeError:
+##        pass
+##    b.delete_preferences_file()
 
-    # tests header-option
-    a = Preferences(filename = filename, header = "test phase")
-    a.x = 5
-    del a
-    a = Preferences(filename = filename, header = "test phase, changed header")
 
-    b = Preferences(filename = filename, header = "test phase, changed header", x=10)
-    b.reset_to_default("x")     
-    assert b.x == 10
 
-    b.set_value(x = 11)
-    assert b.x == 11
-    b.set_value({"x":12})
-    assert b.x == 12
-    b.set("x",1)
-    assert b.x==1
-
-    b.set("x",2)
-    assert b.x==2
-    b.set_default_values(x=-1)
-    assert b.x != -1
-    assert b.x == b.get("x")
-    
-    
-    # testing delete_attribute
-    b.set_default_values(g=5)
-    b.delete_attribute("g")
-    try:
-        b.g
-        raise Exception("shouldn't still have an attribute 'g'")
-    except AttributeError:
-        pass
-
-    del b
-    b = Preferences(filename = filename, header = "test phase, changed header", x=10)
-    try:
-        b.g
-        raise Exception("shouldn't still have an attribute 'g'")
-    except AttributeError:
-        pass
-    b.delete_preferences_file()
     
