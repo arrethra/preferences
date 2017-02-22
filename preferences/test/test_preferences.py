@@ -2,19 +2,22 @@ import unittest
 import os
 import inspect
 
-# This garbage just so to import 'preferences'
-import sys  # ADDED FOR THE ADJUSTED PATH-CHANGE (UPCOMING)
-current_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
-parent_folder = os.path.split(current_folder)[0]
-grandpa_folder = os.path.split(parent_folder)[0]
-if grandpa_folder not in sys.path:
-    sys.path.insert(0, grandpa_folder)
-del sys
-del current_folder, parent_folder, grandpa_folder
+
+try:
+    from preferences import Preferences
+except:
+    # This garbage just so to import 'preferences', if it can't be done via the main way.
+    import sys
+    current_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
+    parent_folder = os.path.split(current_folder)[0]
+    grandpa_folder = os.path.split(parent_folder)[0]
+    if grandpa_folder not in sys.path:
+        sys.path.insert(0, grandpa_folder)
+    del sys
+    del current_folder, parent_folder, grandpa_folder
+    from preferences import Preferences
 
 
-from preferences import Preferences
-##import preferences
 
 CURRENT_PATH = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
 RELATIVE_FOLDER = "stupid_folder_for_testing_dfgd1236lth5viu"
