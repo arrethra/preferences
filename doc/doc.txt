@@ -1,0 +1,154 @@
+(docstring from class Preferences)
+
+class Preferences
+    This class stores the values of its attributes in a file. When
+    re-initializing this class, the attributes of this class will be set
+    to the old values. This can come in handy if you close a program,
+    but like to boot up the program under the same preferences in a new
+    session.
+   
+    Whenever an attribute of this class is set(/changed), this change is
+    stored as well.
+    (NOTE: This only works by explicitly setting the value. Changing a
+    list with append or a dictionary with update will not trigger the
+    change to be stored into the file.)
+   
+    Arguments:
+    defaults:        A dictionary that holds the default values for the
+                     attributes. The keys of theses attributes must be
+                     the name of the attributes (in string-form).  
+    filename:        The file in which the preferences will be stored.
+                     Recognizes both relative paths and absolute paths.
+                     If it is a relative path, the file will be stored
+                     in the same directory as the script that called
+                     upon this class.          Default = preferences.txt
+    header:          Any details you'd like to mention. This text will
+                     appear at the top of the file if specified.
+                     Default = ""
+    **keyword_defaults:
+                     The keywords entered will be set as attributes,
+                     while their corresponding value will be set as
+                     the default for that attribute. This is another
+                     method to initiate attributes and default values.
+   
+           
+    Here is an example of this class; how the default values can be
+    centralized is with the following code (although new defaults can
+    be set with the method set_default_values)
+   
+    defaults = {"x":2, "y":3}        
+    Example1 = Preferences(defaults)
+   
+    Example2 = Preferences(x=2, y=2)
+   
+
+
+Methods:
+    set_default_values(self, *dicts_with_default_values, **kwargs)
+        Initializes or updates default values. Note that if the
+        attributes already exist, this method will not reset their value
+        to default. 
+
+        Two choices for input are possible:
+        -As a dictionary (or multiple), in which the keys must be
+         string-equivalents of the attributes you'd like to
+         initialize/set. The coupled values will be the default values,
+         e.g.  A.set_default_values( { "x":1} )
+       -As keyword-argument(s), in which the keyword represents the
+         attribute and their value the default-value,
+         e.g. A.set_default_values( x = 1 )
+        Input accepts multiple dicts and keywords, e.g.
+        A.set_default_values( { "x":1}, {"y1":2,"y2":3}, z1=1, z2=2 )
+        
+    reset_to_default(self, *attr_names, exclude=None)
+        Resets attributes to default value. If attributes are entered
+        (their string-equivalent), those attributes will be reset.        
+        If no (non-keyword) input is given, all attributes are reset
+        to default. If this latter option failed to reset any attributes
+        (i.e. due to absent default values), then these attributes are
+        returned by the method.
+        If (string-equivalent) attributes for the keyword 'exclude' are
+        given, then these attributes will not be reset. These can be
+        collected in a list.
+
+    get(self, name)
+        Gets value of attribute. Method is same as obtaining value of
+        attribute directly, or using getattr. Somewhat obsolete method.
+   
+    set(self, name, value)
+        Method to set attribute. Argument 'name' must be
+        string-equivalent of attribute.
+        
+        For more variable input, or setting multiple attributes, see
+        method set_value.    
+    
+    set_value(self, *dicts_with_values, **keyword_attributes)
+        Method to set multiple attributes at once. Similar to method set
+        or function setattr.
+        
+        Input can be realized by two means:
+        - a dictionary, in which the keys are the string-equivalents
+          of the attributes, e.g.  A.set_value( { "x":1} )
+        - Keywords, in which the keywords are the attributes, and their
+          new values are assigned to them, e.g.  A.set_value( x = 1 )
+          
+        Input also accepts multiple dicts and/or keywords, e.g.
+        A.set_value( { "x":1}, {"y1":2,"y2":3}, z1=1, z2=2 )
+
+
+   
+    check_before_setting_attribute(self, name, value)
+        This method is called everytime an attribute is set/changed.
+        While the main class has no use for this method, it may
+        very well be usefull if overridden due to inheritance. In that
+        case, it is possible to incorporate checks into this method, 
+        which can check the specifics of the value to which the
+        attribute is about to be changed into (see example below).
+
+        Return-values:
+        If the value passes the test: -return True (or similar).
+        If the value fails  the test: -return False or None (or similar)
+                                       to raise a TypeError.
+                                      -return "pass" prevents the 
+                                       attribute from being changed and
+                                       no Error will be raised.
+                                       Note that "pass" is a string.
+        (Note: When overriding this method, the return must actively be
+        set, or otherwise the default return None will trigger an error)
+        
+        Arguments:
+        -name:      The string-equivalent of the attribute that is to be
+                    changed.
+        -value:     The value to which the attribute will be changed (if
+                    succesfull).
+       
+        Example of code in such a case (which checks for x to be an
+        integer, everytime the value of x changes) :
+        
+        class MyPreferences(Preferences):                
+            def check_before_setting_attribute(self, name , value):
+                if name == "x":
+                    if not isinstance(value, int):
+                        print("'x' should be an integer but found type",
+                             type(value),
+                             "and as a result, 'x' will not be changed")
+                        return "pass"
+                return True
+    
+    delete_attribute(self, name)
+        Deletes attribute from both class and stored file.
+        Also removes any default value of that attribute.
+   
+    delete_preferences_file(self)
+        Deletes the stored file. This method does not destroy this
+        class, nor affects any attributes.
+       
+    valid_attributes(self)
+        Returns current valid attributes as strings, in a list.
+        (i.e. excluding the private attributes of this class).
+    
+    write_to_file(self)
+        Writes ALL the values to the file.
+        This method is automatically called by __setattr__,
+        i.e. whenever the value of an attribute is set.
+ 
