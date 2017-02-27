@@ -78,9 +78,8 @@ class MyTestPrefs(Preferences):
         elif name == "x4":
             return True
         else:
-            if not name.startswith("_"):
-                error_message = "Apart from x1,x2,x3,x4, no other attributes can be set (but you tried to set '%s'."%name
-                raise AttributeError(error_message)
+            error_message = "Apart from x1,x2,x3,x4, no other attributes can be set (but you tried to set '%s'."%name
+            raise AttributeError(error_message)
         return True
 
 

@@ -153,7 +153,14 @@ class Preferences():
         Overrides default behavior for __setattr__. Calls automatically
         upon method write_to_file and check_before_changing_attribute.
         """
-        result_of_check = self.check_before_setting_attribute(name,value)
+        # if the method check_before_setting_attribute is blocked (i.e., manually,
+        # because someone might not like other attributes to be set), these
+        # select few private values can always be changed..
+        if not name in self._ATTRIBUTES_TO_IGNORE + ("_defaults_of_this_class",):
+            result_of_check = self.check_before_setting_attribute(name,value)
+        else:
+            result_of_check = True
+            
         if result_of_check == "pass":
             pass
         elif result_of_check:
@@ -263,7 +270,7 @@ class Preferences():
                 
         return self # enables chaining
 
-    def _valid_attributes(self):
+    def valid_attributes(self):
         """
         Returns current valid attributes as strings, in a list.
         (i.e. excluding the private attributes of this class).
@@ -271,6 +278,7 @@ class Preferences():
         current_attributes = self.__dict__.keys()
         VALID_ATTRIBUTES = [a for a in current_attributes if not a in self._ATTRIBUTES_TO_IGNORE + ("_defaults_of_this_class",) ]
         return VALID_ATTRIBUTES
+
 
     def reset_to_default(self,*attr_names, exclude = None):
         """
@@ -286,7 +294,7 @@ class Preferences():
         """
         
         names = []
-        VALID_ATTRIBUTES = self._valid_attributes()
+        VALID_ATTRIBUTES = self.valid_attributes()
         if len(attr_names) != 0:
             for attr_name in attr_names:
                 if not isinstance(attr_name,list):
@@ -407,9 +415,9 @@ class Preferences():
             error_message = "Input must be string-equivalent to an attribute, but found type %s."\
                             %type(name)
             return TypeError(error_message)
-        if not name in self._valid_attributes():
+        if not name in self.valid_attributes():
             error_message = "'%s' is not a valid attribute; valid attributes are '%s'"\
-                            %(name,"', '".join(sorted(self._valid_attributes())))
+                            %(name,"', '".join(sorted(self.valid_attributes())))
             return AttributeError(error_message)
 
 
@@ -503,35 +511,7 @@ class Preferences():
 
 if __name__ == "__main__":
 
-    # EXAMPLE 2: change value of input through method check_before_setting_attribute:
-    class MyPrefs(Preferences):
-        def check_before_setting_attribute(self,name,value):
-            if name == "ExampleInteger":
-                if not isinstance(value,int):
-                    try:
-                        A = int(value)
-                    except:
-                        return False
-                    else:                        
-                        setattr(self,name,A)
-                        return "pass"
-                elif isinstance(value,int):
-                    pass
-                else:
-                    return False
-            return True
-        
     
-    filename_ex2 = "preferences - example2.txt"
-    a = MyPrefs(filename = filename_ex2 ,ExampleInteger = 1)
-    a.ExampleInteger = "2" # test that strings get converted into integers
-    assert isinstance(a.ExampleInteger , int), a.ExampleInteger
-    try:
-        a.ExampleInteger = "str" # test if this raises a TypeError (like it should). If so, it is ignored in this example 
-    except TypeError: pass
-    else: raise Exception
-    a.set_default_values({"x":1})
-    a.delete_preferences_file()
 
 
     #### TEST #####   
@@ -546,66 +526,6 @@ if __name__ == "__main__":
     
 
     
-##
-##    ##### OBSOLETE TESTING ##########
-##    
-##    # testing main functionality
-##    filename = "preferences__Ignore_me_Im_just_part_of_a_test.txt"
-##    try: #begin with clean sheet
-##        os.remove(filename)
-##    except FileNotFoundError:
-##        pass
-##    a = Preferences(filename = filename )
-##    a.x = 5
-##    a.y = 6
-##    del a # forgets the variable...
-##    a = Preferences(filename = filename)
-##    assert a.x == 5 # ...but the value has been remembered
-##    assert a.reset_to_default(), a.reset_to_default() # No defaults have been set. Therefor the reset_to_default SHOULD return the variables it wasn't able to reset
-##    assert not a.set_default_values({"x":1,"y":6}).reset_to_default()
-##
-##    # tests header-option
-##    a = Preferences(filename = filename, header = "test phase")
-##    a.x = 5
-##    del a
-##    a = Preferences(filename = filename, header = "test phase, changed header")
-##
-##    b = Preferences(filename = filename, header = "test phase, changed header", x=10)
-##    b.reset_to_default("x")
-##    assert b.x == 10
-##
-##    b.set_value(x = 11)
-##    assert b.x == 11
-##    b.set_value({"x":12})
-##    assert b.x == 12
-##    b.set("x",1)
-##    assert b.x==1
-##
-##    b.set("x",2)
-##    assert b.x==2
-##    b.set_default_values(x=-1)
-##    assert b.x != -1
-##    assert b.x == b.get("x")
-##
-##
-##    # testing delete_attribute
-##    b.set_default_values(g=5)
-##    b.delete_attribute("g")
-##    try:
-##        b.g
-##        raise Exception("shouldn't still have an attribute 'g'")
-##    except AttributeError:
-##        pass
-##
-##    del b
-##    b = Preferences(filename = filename, header = "test phase, changed header", x=10)
-##    try:
-##        b.g
-##        raise Exception("shouldn't still have an attribute 'g'")
-##    except AttributeError:
-##        pass
-##    b.delete_preferences_file()
-
 
 
     

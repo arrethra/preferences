@@ -1,3 +1,13 @@
+# need to import from another folder; this block enables that
+import sys, os, inspect
+current_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
+parent_folder = os.path.split(current_folder)[0]
+if parent_folder not in sys.path:
+    sys.path.insert(0, parent_folder)
+del sys, os, inspect, current_folder, parent_folder
+
+##### Example from README #######
+
 ## This module enables automatical storage of values/preferences to a file
 ## when its values are set/changed*. These values are configured as the 
 ## attributes (named after your own choice) of the class Preferences. 
