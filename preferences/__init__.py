@@ -62,7 +62,7 @@ class Preferences():
     _ATTRIBUTES_TO_IGNORE = ("_initialization_complete_of_this_class",
                              "_filename_to_store_the_preferences",
                              "_header_of_this_class",
-                             "_ATTRIBUTES_TO_IGNORE") # TODO: make control-attribute that checks if file exists? So you won't get an error if delete_preferences_file is called_upon twice ??
+                             "_ATTRIBUTES_TO_IGNORE")
     
     _HEADER_SPLITTER = 40*"#"
 
@@ -85,7 +85,7 @@ class Preferences():
             path = os.path.join(originating_folder , filename) # gets path of place from where this function is called, and join it with the new filename/relative path
             path = os.path.abspath(path) # in case input was not formatted correctly
             path_to_filename = os.path.split(path)[0]
-            if not os.path.exists(path_to_filename): # TODO: use os.path.exists()  ??
+            if not os.path.exists(path_to_filename):
                 error_message = "No such directory: %s."%path_to_filename
                 raise FileNotFoundError(error_message)
             else:
@@ -248,14 +248,18 @@ class Preferences():
                 except AttributeError:
                     setattr(self,x,master_dict[x])
 
-        dict_copy = self._defaults_of_this_class.copy()
-        dict_copy.update( master_dict )
-        self._defaults_of_this_class = col.OrderedDict(sorted(dict_copy.items(),key = lambda x:x[0])) # TODO: do error_checking first, if all variables are correctly formatted and such.. ?
-
         if error_collection:
-            error_message = "To set default for an attribute, the key in the dict must be of instance string, but found type(s) %s, (respectively) coupled to values %s."\
-          %( ", ".join(["%s"%(x[0]) for x in error_collection]), ", ".join(["%s"%(x[1]) for x in error_collection]) )
+            error_message = "To set default for an attribute, the key in"+\
+                            " the dict must be of instance string, but found"+\
+                            " type(s) %s, (respectively) coupled to values %s."\
+                             %( ", ".join(["%s"%(x[0]) for x in error_collection]),
+                                ", ".join(["%s"%(x[1]) for x in error_collection]) )
             raise ValueError(error_message)
+
+        dict_copy = self._defaults_of_this_class.copy()
+        dict_copy.update( master_dict )       
+        
+        self._defaults_of_this_class = col.OrderedDict(sorted(dict_copy.items(),key = lambda x:x[0]))
                 
         return self # enables chaining
 
@@ -271,7 +275,7 @@ class Preferences():
     def reset_to_default(self,*attr_names, exclude = None):
         """
         Resets attributes to default value. If attributes are entered
-        (their string-equivalent), those attributes will be resetted.        
+        (their string-equivalent), those attributes will be reset.        
         If no (non-keyword) input is given, all attributes are reset
         to default. If this latter option failed to reset any attributes
         (i.e. due to absent default values), then these attributes are
@@ -310,7 +314,12 @@ class Preferences():
 
         # exempts the excluded attributes from being reset.
         for exc in exclude:
-            assert isinstance(exc,str), exc # TODO  (TODO: check other assert as well, with ctrl-F)
+            if not isinstance(exc,str):
+                error_message = "argument 'exclude' should receive "+\
+                                "STRING-equivalent attribute-names "+\
+                                "(which can be collected in tuple or list)"+\
+                                " but found type %s."%(type(exc))
+                raise TypeError(error_message)
             if not exc in VALID_ATTRIBUTES:
                 excluded_names += [exc]
             elif exc in names:
@@ -327,7 +336,11 @@ class Preferences():
         # collects any attributes that did not have a default value   
         name_error = []        
         for name in names:
-            assert isinstance(name,str), "The attributes should be the string-equivalents, but found type %s"%type(name)  # TODO
+            if not isinstance(name,str):
+                error_message = "The attributes should be the "+\
+                                "string-equivalents, but found type %s"\
+                                %(type(name))
+                raise TypeError(error_message)
             try:                
                 setattr(self, name, self._defaults_of_this_class[name])                
             except:                
@@ -384,7 +397,7 @@ class Preferences():
         return True
 
 
-    def _test_if_valid_attribute(self,name): # TODO: expand functionality to other functions, so code is cleaned up there??
+    def _test_if_valid_attribute(self,name): 
         """
         Tests if name is valid attribute of this class.
         If it fails, this method returns an error. (otherwise None)
@@ -433,18 +446,21 @@ class Preferences():
         master_dict = {}
         if dicts_with_values:
             for dict_with_values in dicts_with_values:
-                assert isinstance(dict_with_values, dict) # TODO
+                if not isinstance(dict_with_values, dict):
+                    error_message = "Expected dictionary but found type %s."%(type(dict_with_values))
+                    raise TypeError(error_message)
                 master_dict.update(dict_with_values)
         if keyword_attributes:
             master_dict.update(keyword_attributes)
 
         # set attributes
         for attribute in master_dict:
-            assert isinstance(attribute,str), attribute
-            try:
-                setattr(self,attribute,master_dict[attribute])
-            except:
-                raise
+            if not isinstance(attribute,str):
+                error_message = "The keywords in the dictionaries should "+\
+                                "be the STRING-equivalent of that attribute "+\
+                                "name, but found type %s."%(type(attribute))
+                raise TypeError(error_message)
+            setattr(self,attribute,master_dict[attribute])            
         return self
 
 
@@ -480,7 +496,8 @@ class Preferences():
         Deletes the stored file. This method does not destroy this
         class, nor affects any attributes.
         """
-        os.remove(self._filename_to_store_the_preferences)
+        if os.path.exists(self._filename_to_store_the_preferences):
+            os.remove(self._filename_to_store_the_preferences)
         return self # enables chaining
         
 

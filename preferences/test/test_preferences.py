@@ -224,6 +224,9 @@ class TestPreferences(unittest.TestCase):
         self.assertFalse(self.P.x1 == 4)
         self.assertTrue(self.P.x1 == self.defaults_with_dict["x1"])
         
+        self.P.delete_preferences_file()
+        self.P.delete_preferences_file()
+        
         
 
     def test_reset_to_default(self):
@@ -378,24 +381,23 @@ class TestPreferences(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.P.set(x2 = ["h"])
 
-        
 
         
         
         
 
     def tearDown(self):
-        try:
-            self.P.delete_preferences_file()
+        try:    self.P
         except: pass
-        try:
-            del self.P
+        else:   self.P.delete_preferences_file()
+        
+        try:    del self.P
         except: pass
 
     # a folder has been created for this class, time to delete that folder
     def tearDownClass():
         if os.path.exists(TARGET_FOLDER):
-            os.rmdir(TARGET_FOLDER)
+            os.rmdir(TARGET_FOLDER) # if folder not empty, will give error IIRC
 
 
 
