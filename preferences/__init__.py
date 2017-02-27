@@ -13,7 +13,7 @@ Under MIT license
 from copy import copy
 import json
 import os.path
-from collections import OrderedDict
+import collections as col
 
   
 class Preferences():
@@ -59,11 +59,12 @@ class Preferences():
     Example2 = Preferences(x=2, y=2)
     """
     
-    ATTRIBUTES_TO_IGNORE = ["_initialization_complete_of_this_class",
-                            "_filename_to_store_the_preferences",
-                            "_header_of_this_class"]
+    _ATTRIBUTES_TO_IGNORE = ("_initialization_complete_of_this_class",
+                             "_filename_to_store_the_preferences",
+                             "_header_of_this_class",
+                             "_ATTRIBUTES_TO_IGNORE") # TODO: make control-attribute that checks if file exists? So you won't get an error if delete_preferences_file is called_upon twice ??
     
-    HEADER_SPLITTER = 40*"#"
+    _HEADER_SPLITTER = 40*"#"
 
     
     def __init__(self, defaults = "dict",
@@ -79,17 +80,20 @@ class Preferences():
         path_to_filename = os.path.split(filename)[0]
         if not os.path.isabs(path_to_filename): #it's not an absolute path, which makes it a relative path
             import inspect
+
             originating_folder = os.path.split( inspect.stack()[1][1] )[0]
             path = os.path.join(originating_folder , filename) # gets path of place from where this function is called, and join it with the new filename/relative path
             path = os.path.abspath(path) # in case input was not formatted correctly
             path_to_filename = os.path.split(path)[0]
-            if not os.path.isabs(path_to_filename):
-                error_message = "No such directory: %s."%filename
+            if not os.path.exists(path_to_filename): # TODO: use os.path.exists()  ??
+                error_message = "No such directory: %s."%path_to_filename
                 raise FileNotFoundError(error_message)
             else:
                 self._filename_to_store_the_preferences = path
         else:
             self._filename_to_store_the_preferences = filename
+
+
 
         self._header_of_this_class = header
 
@@ -104,11 +108,11 @@ class Preferences():
              text_file.close()             
         else:
             saved_values = "".join(saved_values)
-            if self.HEADER_SPLITTER in saved_values:
-                header_from_file = saved_values.split(self.HEADER_SPLITTER)[0][:-2]
+            if self._HEADER_SPLITTER in saved_values:
+                header_from_file = saved_values.split(self._HEADER_SPLITTER)[0][:-2]
                 if not self._header_of_this_class:
                     self._header_of_this_class = header_from_file
-                saved_values = saved_values.split(self.HEADER_SPLITTER)[-1]
+                saved_values = saved_values.split(self._HEADER_SPLITTER)[-1]
             saved_values = saved_values.replace("\n","")
             try:
                 saved_values = json.loads(saved_values)
@@ -121,7 +125,7 @@ class Preferences():
                     setattr(self, attr_name, saved_values[attr_name])
                         
         try:
-            self._defaults_of_this_class = OrderedDict(sorted(self._defaults_of_this_class.items(),key = lambda x:x[0]))
+            self._defaults_of_this_class = col.OrderedDict(sorted(self._defaults_of_this_class.items(),key = lambda x:x[0]))
         except AttributeError:
             self._defaults_of_this_class = {}  #just initiating this attribute, the method set_default_values sets it
 
@@ -153,7 +157,6 @@ class Preferences():
         if result_of_check == "pass":
             pass
         elif result_of_check:
-            
             if callable(value):
                 error_message = "You cannot assign functions to attributes of this class, but still you tried to allocate a function to attribute '%s'."\
                                 %(type(value),name) #json won't accept functions and such, only predefined numbers and things
@@ -171,9 +174,10 @@ class Preferences():
             else:
                 self.write_to_file()
         else:
-            error_message = "The change of the attribute '%s' failed the method 'check_before_setting_attribute' in this class; \
-                            the value was of type '%s' and of value '%s'."\
-                            %(name,type(value),value)
+            error_message = "The change of the attribute '"+name+"' failed the method "+\
+                            "'check_before_setting_attribute' in this class; "+\
+                            "the value was of type '%s' and of value '%s'."\
+                            %(type(value),value)
             raise TypeError(error_message)
         
 
@@ -186,18 +190,18 @@ class Preferences():
         if self._initialization_complete_of_this_class:
             
             attributes = copy(self.__dict__)
-            for x in self.ATTRIBUTES_TO_IGNORE:
+            for x in self._ATTRIBUTES_TO_IGNORE:
                 try:
                     del attributes[x] # if this gets into the file, the attribute "_initialization_complete_of_this_class" could be initialized before it is supposed to. This could bring havoc upon method __init__
                 except:
                     pass
-            attributes = OrderedDict(sorted(attributes.items(), key = lambda x: x[0] if x[0] != "_defaults_of_this_class" else 40*"z"))
+            attributes = col.OrderedDict(sorted(attributes.items(), key = lambda x: x[0] if x[0] != "_defaults_of_this_class" else 40*"z"))
 
             Z = json.dumps(attributes)
             Z = Z[0:Z.index("_defaults_of_this_class")-1].replace(",",",\n") +"\n "+ Z[Z.index("_defaults_of_this_class")-1:].replace(",",",\n"+28*" ") # remark: I am pretty-typing json myself, but json self also has this capability. erghh, too late for that
 
             if self._header_of_this_class:
-                Z = self._header_of_this_class + "\n\n"+self.HEADER_SPLITTER+"\n\n" + Z
+                Z = self._header_of_this_class + "\n\n"+self._HEADER_SPLITTER+"\n\n" + Z
 
             text_file = open(self._filename_to_store_the_preferences, "w")
             text_file.write("%s" % Z) # TODO: right now I rewrite the entire file everytime, but this is time-consuming: I should only overwrite the lines that need overwriting....
@@ -224,21 +228,34 @@ class Preferences():
         """
         master_dict = {}
         for dict_with_default_values in dicts_with_default_values:
-            assert isinstance(dict_with_default_values, dict)
+            if not isinstance(dict_with_default_values, dict):
+                error_message = "Expected dictionary (as non-keyword argument) but found type %s."%(dict_with_default_values)
+                raise TypeError(error_message)
             master_dict.update(dict_with_default_values)
 
         master_dict.update(kwargs)
 
+
+
+        error_collection = []
+        for x in master_dict.copy():
+            if not isinstance(x,str):
+                error_collection.append([x,master_dict[x]])
+                del master_dict[x]
+            else:
+                try:
+                    getattr(self,x)
+                except AttributeError:
+                    setattr(self,x,master_dict[x])
+
         dict_copy = self._defaults_of_this_class.copy()
         dict_copy.update( master_dict )
-        self._defaults_of_this_class = OrderedDict(sorted(dict_copy.items(),key = lambda x:x[0]))
-        
-        for x in master_dict:
-            assert isinstance(x,str), "Attribute name must be initialized as a string, but found type %s."%type(x)
-            try:
-                getattr(self,x)
-            except AttributeError:
-                setattr(self,x,master_dict[x])
+        self._defaults_of_this_class = col.OrderedDict(sorted(dict_copy.items(),key = lambda x:x[0])) # TODO: do error_checking first, if all variables are correctly formatted and such.. ?
+
+        if error_collection:
+            error_message = "To set default for an attribute, the key in the dict must be of instance string, but found type(s) %s, (respectively) coupled to values %s."\
+          %( ", ".join(["%s"%(x[0]) for x in error_collection]), ", ".join(["%s"%(x[1]) for x in error_collection]) )
+            raise ValueError(error_message)
                 
         return self # enables chaining
 
@@ -248,7 +265,7 @@ class Preferences():
         (i.e. excluding the private attributes of this class).
         """
         current_attributes = self.__dict__.keys()
-        VALID_ATTRIBUTES = [a for a in current_attributes if not a in self.ATTRIBUTES_TO_IGNORE +["_defaults_of_this_class"] ]
+        VALID_ATTRIBUTES = [a for a in current_attributes if not a in self._ATTRIBUTES_TO_IGNORE + ("_defaults_of_this_class",) ]
         return VALID_ATTRIBUTES
 
     def reset_to_default(self,*attr_names, exclude = None):
@@ -293,7 +310,7 @@ class Preferences():
 
         # exempts the excluded attributes from being reset.
         for exc in exclude:
-            assert isinstance(exc,str), exc
+            assert isinstance(exc,str), exc # TODO  (TODO: check other assert as well, with ctrl-F)
             if not exc in VALID_ATTRIBUTES:
                 excluded_names += [exc]
             elif exc in names:
@@ -310,7 +327,7 @@ class Preferences():
         # collects any attributes that did not have a default value   
         name_error = []        
         for name in names:
-            assert isinstance(name,str), "The attributes should be the string-equivalents, but found type %s"%type(name)
+            assert isinstance(name,str), "The attributes should be the string-equivalents, but found type %s"%type(name)  # TODO
             try:                
                 setattr(self, name, self._defaults_of_this_class[name])                
             except:                
@@ -391,7 +408,7 @@ class Preferences():
         For more variable input, or setting multiple attributes, see
         method set_value.
         """
-        if self._test_if_valid_attribute(name): # Error_handling
+        if isinstance(self._test_if_valid_attribute(name),TypeError): # Error_handling
             raise self._test_if_valid_attribute(name)
         setattr(self,name,value)
         return self
@@ -416,7 +433,7 @@ class Preferences():
         master_dict = {}
         if dicts_with_values:
             for dict_with_values in dicts_with_values:
-                assert isinstance(dict_with_values, dict)
+                assert isinstance(dict_with_values, dict) # TODO
                 master_dict.update(dict_with_values)
         if keyword_attributes:
             master_dict.update(keyword_attributes)
@@ -467,8 +484,7 @@ class Preferences():
         return self # enables chaining
         
 
-               
-if __name__ == "__main__":    
+if __name__ == "__main__":
 
     # EXAMPLE 2: change value of input through method check_before_setting_attribute:
     class MyPrefs(Preferences):
@@ -497,67 +513,82 @@ if __name__ == "__main__":
         a.ExampleInteger = "str" # test if this raises a TypeError (like it should). If so, it is ignored in this example 
     except TypeError: pass
     else: raise Exception
+    a.set_default_values({"x":1})
     a.delete_preferences_file()
 
 
-
-
+    #### TEST #####   
+##    import sys, inspect
+##    current_folder = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])) 
+##    parent_folder = os.path.split(current_folder)[0]
+##    if parent_folder not in sys.path:
+##        sys.path.insert(0, parent_folder)
+    from test.test_preferences import TestPreferences, run_test_preferences
+    
+    run_test_preferences()
+    
 
     
-    # testing main functionality
-    filename = "preferences__Ignore_me_Im_just_part_of_a_test.txt"
-    try: #begin with clean sheet
-        os.remove(filename)
-    except FileNotFoundError:
-        pass
-    a = Preferences(filename = filename )
-    a.x = 5
-    a.y = 6
-    del a # forgets the variable...
-    a = Preferences(filename = filename)
-    assert a.x == 5 # ...but the value has been remembered
-    assert a.reset_to_default(), a.reset_to_default() # No defaults have been set. Therefor the reset_to_default SHOULD return the variables it wasn't able to reset
-    assert not a.set_default_values({"x":1,"y":6}).reset_to_default()
+##
+##    ##### OBSOLETE TESTING ##########
+##    
+##    # testing main functionality
+##    filename = "preferences__Ignore_me_Im_just_part_of_a_test.txt"
+##    try: #begin with clean sheet
+##        os.remove(filename)
+##    except FileNotFoundError:
+##        pass
+##    a = Preferences(filename = filename )
+##    a.x = 5
+##    a.y = 6
+##    del a # forgets the variable...
+##    a = Preferences(filename = filename)
+##    assert a.x == 5 # ...but the value has been remembered
+##    assert a.reset_to_default(), a.reset_to_default() # No defaults have been set. Therefor the reset_to_default SHOULD return the variables it wasn't able to reset
+##    assert not a.set_default_values({"x":1,"y":6}).reset_to_default()
+##
+##    # tests header-option
+##    a = Preferences(filename = filename, header = "test phase")
+##    a.x = 5
+##    del a
+##    a = Preferences(filename = filename, header = "test phase, changed header")
+##
+##    b = Preferences(filename = filename, header = "test phase, changed header", x=10)
+##    b.reset_to_default("x")
+##    assert b.x == 10
+##
+##    b.set_value(x = 11)
+##    assert b.x == 11
+##    b.set_value({"x":12})
+##    assert b.x == 12
+##    b.set("x",1)
+##    assert b.x==1
+##
+##    b.set("x",2)
+##    assert b.x==2
+##    b.set_default_values(x=-1)
+##    assert b.x != -1
+##    assert b.x == b.get("x")
+##
+##
+##    # testing delete_attribute
+##    b.set_default_values(g=5)
+##    b.delete_attribute("g")
+##    try:
+##        b.g
+##        raise Exception("shouldn't still have an attribute 'g'")
+##    except AttributeError:
+##        pass
+##
+##    del b
+##    b = Preferences(filename = filename, header = "test phase, changed header", x=10)
+##    try:
+##        b.g
+##        raise Exception("shouldn't still have an attribute 'g'")
+##    except AttributeError:
+##        pass
+##    b.delete_preferences_file()
 
-    # tests header-option
-    a = Preferences(filename = filename, header = "test phase")
-    a.x = 5
-    del a
-    a = Preferences(filename = filename, header = "test phase, changed header")
 
-    b = Preferences(filename = filename, header = "test phase, changed header", x=10)
-    b.reset_to_default("x")     
-    assert b.x == 10
 
-    b.set_value(x = 11)
-    assert b.x == 11
-    b.set_value({"x":12})
-    assert b.x == 12
-    b.set("x",1)
-    assert b.x==1
-
-    b.set("x",2)
-    assert b.x==2
-    b.set_default_values(x=-1)
-    assert b.x != -1
-    assert b.x == b.get("x")
-    
-    
-    # testing delete_attribute
-    b.set_default_values(g=5)
-    b.delete_attribute("g")
-    try:
-        b.g
-        raise Exception("shouldn't still have an attribute 'g'")
-    except AttributeError:
-        pass
-
-    del b
-    b = Preferences(filename = filename, header = "test phase, changed header", x=10)
-    try:
-        b.g
-        raise Exception("shouldn't still have an attribute 'g'")
-    except AttributeError:
-        pass
-    b.delete_preferences_file()
     
