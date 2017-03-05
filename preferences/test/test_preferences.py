@@ -380,6 +380,17 @@ class TestPreferences(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.P.set(x2 = ["h"])
 
+    def test_get_default_value(self):
+        self.P = self.initialize_without_defaults()
+        self.P.set_default_values(self.defaults_with_dict)
+        assert_default_values(self)
+
+        
+        self.assertTrue(self.P.get_default_value("x1")==1)
+
+        self.P.set_default_values(x1=4, x2=5, x3=6)
+        self.assertTrue(self.P.get_default_value("x1")==4)
+        
 
         
         

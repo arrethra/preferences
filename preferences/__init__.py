@@ -484,6 +484,20 @@ class Preferences():
         return getattr(self,name)
     
 
+    def get_default_value(self,name):
+        """
+        Returns default-value of attribute.
+        (argument must be entered as string-equivalent).
+        """
+        if self._test_if_valid_attribute(name): # Error_handling
+            raise self._test_if_valid_attribute(name)
+        
+        if not name in self._defaults_of_this_class.keys():
+            error_message = "Attribute '%s' does not have a default-value."%(name)
+            raise ValueError(error_message)
+        return self._defaults_of_this_class[name]
+    
+
     def delete_attribute(self,name):
         """        
         Deletes attribute from both class and stored file.

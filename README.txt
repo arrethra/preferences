@@ -6,8 +6,8 @@
 ## recognisable format (JSON).
 ##
 ##     *Override through 'setattr', which means that methods such as 
-##     list.append or dict.update do not trigger this automatic behavior,
-##     where the value is stored to a file.
+##     list.append or dict.update do not automatically save the new 
+##     value to the stored file.
 ##
 ## It is possible to set defaults for these values quite easily. These 
 ## defaults are stored in the file as well. When the values change, these
@@ -18,8 +18,9 @@
 ## can check the instance or format of the saved value automatically. 
 ## This requires overriding the method 'check_before_setting_attribute".
 ##
-## For more information on all the methods and/or examples see the 
-## docstring [help(Preferences)].
+## For more information on all the methods, see the folder 'doc' or see 
+## the docstring [help(Preferences)]. There are also examples available 
+## in the relavent folder.
 ##
 ##
 ## Simple example:

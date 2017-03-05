@@ -59,6 +59,12 @@ Methods:
          e.g. A.set_default_values( x = 1 )
         Input accepts multiple dicts and keywords, e.g.
         A.set_default_values( { "x":1}, {"y1":2,"y2":3}, z1=1, z2=2 )
+
+
+   get_default_value(name):
+        Returns default-value of attribute.
+        (argument must be entered as string-equivalent).
+        
         
     reset_to_default(self, *attr_names, exclude=None)
         Resets attributes to default value. If attributes are entered
@@ -71,10 +77,12 @@ Methods:
         given, then these attributes will not be reset. These can be
         collected in a list.
 
+
     get(self, name)
         Gets value of attribute. Method is same as obtaining value of
         attribute directly, or using getattr. Somewhat obsolete method.
    
+
     set(self, name, value)
         Method to set attribute. Argument 'name' must be
         string-equivalent of attribute.
@@ -82,6 +90,7 @@ Methods:
         For more variable input, or setting multiple attributes, see
         method set_value.    
     
+
     set_value(self, *dicts_with_values, **keyword_attributes)
         Method to set multiple attributes at once. Similar to method set
         or function setattr.
@@ -96,7 +105,6 @@ Methods:
         A.set_value( { "x":1}, {"y1":2,"y2":3}, z1=1, z2=2 )
 
 
-   
     check_before_setting_attribute(self, name, value)
         This method is called everytime an attribute is set/changed.
         While the main class has no use for this method, it may
@@ -135,20 +143,23 @@ Methods:
                         return "pass"
                 return True
     
+
     delete_attribute(self, name)
         Deletes attribute from both class and stored file.
         Also removes any default value of that attribute.
    
+
     delete_preferences_file(self)
         Deletes the stored file. This method does not destroy this
         class, nor affects any attributes.
        
+
     valid_attributes(self)
         Returns current valid attributes as strings, in a list.
         (i.e. excluding the private attributes of this class).
     
+
     write_to_file(self)
         Writes ALL the values to the file.
         This method is automatically called by __setattr__,
         i.e. whenever the value of an attribute is set.
- 
